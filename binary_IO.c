@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include "stream.h"
 #include <stdbool.h>
+#include "inflate.h"
+#include <stdlib.h>
+#include <assert.h>
 
 void write_header(stream*);
 void write_run_length(bit_writer *, int, int, int32_t *, int);
@@ -69,7 +72,27 @@ void write_run_length(bit_writer* bit_state, int nlit, int ndist, int32_t* run_l
     int hclen = 19 - count_zero;
     int hdist = ndist - 1;
     int hlit = nlit - 257;
+    write_bit(bit_state, hlit, 5, false);
+    write_bit(bit_state, hdist, 5, false);
+    write_bit(bit_state, hclen, 4, false);
+
+    // Now I need to wrtie a procedure that converts code lengths into huffman code
+    compress_info* run_lengths = malloc(sizeof(compress_info) * 19);
     
+    for (int i = 0; i < 19; ++i)
+    {
+	run_lengths[i].value = i;
+	run_lengths[i].code_length = 0;
+	run_lengths[i].huffman_code = 0;
+    }
+
+    construct_huffman_code(run_lengths, run_length_count, 19);
+
+    for (int i = 0; i < 19; ++i)
+    {
+	if (run_lengths[i].code_length!=0)
+	    printf("\nRun length are :-> Value : %d, code_length = %d and code : %d.",run_lengths[i].value,run_lengths[i].code_length,run_lengths[i].huffman_code);
+    }
 }
 
 int write_bit(bit_writer* bit_state, int data, int len, bool reverse)
