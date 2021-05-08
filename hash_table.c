@@ -85,3 +85,13 @@ void update_sliding_window(stream* input_stream, sliding_window* window)
 	window->start_pos+= diff;
     }
 }
+
+void cleanup_hash(hash_entry** hash_table)
+{
+    for (int i = 0; i < HASH_TABLE_SIZE; ++i)
+    {
+	if(hash_table[i] !=NULL)
+	    delete_chain(hash_table[i]);
+    }
+    free(hash_table);
+}
