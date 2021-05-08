@@ -11,6 +11,8 @@ hash_entry** init_hash_table()
     return hash_table;
 }
 
+// Not a fancy function .. returns the middle byte
+// Could be made much much larger for space time tradeoff 
 int16_t hash_function(hash_entry entry)
 {
     return entry.str[1];
@@ -53,9 +55,10 @@ int insert_table(hash_entry** hash_table, hash_entry entry)
 
 int delete_chain(hash_entry* node)
 {
-    if (!node)
+    if (!node) 
 	return 0;
     delete_chain(node->next);
+    node->next = NULL;
     free(node);
     return 0;
 }
@@ -79,10 +82,10 @@ void update_sliding_window(stream* input_stream, sliding_window* window)
 {
     window->end_pos = input_stream->pos;
 
-    if ((window->end_pos - window->start_pos) > 32 * 1024)
+    if ((window->end_pos - window->start_pos) >= 32 * 1024)
     {
 	int32_t diff = (window->end_pos - window->start_pos) - 32 * 1024;
-	window->start_pos+= diff;
+	window->start_pos += diff;
     }
 }
 
@@ -90,7 +93,7 @@ void cleanup_hash(hash_entry** hash_table)
 {
     for (int i = 0; i < HASH_TABLE_SIZE; ++i)
     {
-	if(hash_table[i] !=NULL)
+	if(hash_table[i] != NULL)
 	    delete_chain(hash_table[i]);
     }
     free(hash_table);
