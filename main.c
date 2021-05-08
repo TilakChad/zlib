@@ -10,8 +10,9 @@
 #include <stdio.h>
 #include "hash_table.h"
 
-extern int lz77(stream*, stream*, sliding_window*, hash_entry**);
+extern int compress(stream*, stream*, sliding_window*, hash_entry**);
 #define SIZE (1024*1024)
+
 
 int main(int argc, char **argv)
 {
@@ -35,6 +36,13 @@ int main(int argc, char **argv)
 	return -1;
     }
 
+    /* FILE* op = fopen(argv[2],"wb"); */
+    /* if (!op) */
+    /* { */
+    /* 	fprintf(stderr,"Failed to open %s for writing.\n",argv[2]); */
+    /* 	return -2; */
+    /* } */
+    
     instream.buffer = malloc(sizeof(unsigned char) * SIZE);
     
     uint32_t read_size;
@@ -51,7 +59,15 @@ int main(int argc, char **argv)
     window.start_pos = 0;
     window.end_pos = 0;
 
-    while(lz77(&instream,&outstream, &window,hash_table));
-    printf("\n\nObtained string was : %s.\n",outstream.buffer);
+    // instead of writing to the main file, lets just write to outstream for now 
+    compress(&instream,&outstream,&window,hash_table);
+
+
+    //cleanup section 
+    free(instream.buffer);
+    free(outstream.buffer);
+    cleanup_hash(hash_table);
+    
+    fclose(fp);
     return 0;   
 }
