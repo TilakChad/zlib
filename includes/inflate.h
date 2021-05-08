@@ -11,6 +11,6 @@ typedef struct compress_info
 } compress_info ;
 
 int construct_huffman_code(compress_info* , int32_t* , int );
-void write_adler32(stream*, stream *);
+void write_adler32(stream*, bit_writer*);
 
 #endif
