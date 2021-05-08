@@ -31,7 +31,7 @@ struct run_length run_length_encoder(int32_t* arr, int cur_index, int max_index,
 
 
 
-int compress(stream *input_stream, stream *output_stream,sliding_window *window, hash_entry **hash_table)
+int compress(stream *input_stream, bit_writer* write_state,sliding_window *window, hash_entry **hash_table, int* literal_count)
 {
     int32_t literals[NLIT+NDIST];
     for (int i = 0; i < NLIT+NDIST; ++i)
@@ -40,6 +40,8 @@ int compress(stream *input_stream, stream *output_stream,sliding_window *window,
     length_distance record = (length_distance) {-1,-1};
     literals[256] = 1;
     int8_t count;
+
+    int current_stream_pos = input_stream->pos;
     
     while(1)
     {
@@ -80,15 +82,24 @@ int compress(stream *input_stream, stream *output_stream,sliding_window *window,
 	    literals[NLIT + index]++;
 	}
 	update_sliding_window(input_stream, window);
+	*literal_count += 1;
+	if (*literal_count >= MAX_LITERAL_PER_BLOCK)
+	    break;
     }
 
-    for (int i = 0; i < NLIT; ++i)
-    {
-    	if (literals[i]!=0)
-	{
-    	    printf("Literals -> [%d] -> [%d]\n ",i,literals[i]);
-	}
-    }
+    int btype = 2, bfinal = 0;
+    if (*literal_count < MAX_LITERAL_PER_BLOCK)
+	bfinal = 1;
+
+    write_deflate_header(write_state, bfinal, btype);
+
+    /* for (int i = 0; i < NLIT; ++i) */
+    /* { */
+    /* 	if (literals[i]!=0) */
+    /* 	{ */
+    /* 	    printf("Literals -> [%d] -> [%d]\n ",i,literals[i]); */
+    /* 	} */
+    /* } */
 
     // Now need to generate dynamic huffman codes from the given table ..
     // Need to count the code length of first 285+1 literals
@@ -139,23 +150,17 @@ int compress(stream *input_stream, stream *output_stream,sliding_window *window,
     huffman_coding(run_length_coderepeat, 19, run_length_code_length, 19);
 
     printf("\nRun length info -> \n");
-    for (int i = 0; i < 19; ++i)
-    {
-    	if (run_length_code_length[i]!=0)
-    	    printf("\n [%d] -> [%d].",i, run_length_code_length[i]);
-    }
-    putchar('\n');
+    /* for (int i = 0; i < 19; ++i) */
+    /* { */
+    /* 	if (run_length_code_length[i]!=0) */
+    /* 	    printf("\n [%d] -> [%d].",i, run_length_code_length[i]); */
+    /* } */
+    /* putchar('\n'); */
 
     // Now need to write to the files as compressed block .. it is the final stage
     // Initialize the bit writer
-    bit_writer write_state;
-    write_state.outstream = output_stream;
-    write_state.bit_buffer = 0;
-    write_state.count = 0;
     // begin writing to the files
-    write_header(output_stream); // Writes the zlib header
-    write_deflate_header(&write_state);
-    compress_info* run_length_compress_info =  write_run_length(&write_state, NLIT, NDIST, run_length_code_length, 19);
+    compress_info* run_length_compress_info =  write_run_length(write_state, NLIT, NDIST, run_length_code_length, 19);
 
 
     // Now comes the inflate compression
@@ -174,7 +179,7 @@ int compress(stream *input_stream, stream *output_stream,sliding_window *window,
     	// run_length_coderepeat[cur_code.code_length]++;
 	
     	if (cur_code.code_length >=0 && cur_code.code_length <= 15)
-    	    write_bit(&write_state, run_length_compress_info[cur_code.code_length].huffman_code, run_length_compress_info[cur_code.code_length].code_length,true);
+    	    write_bit(write_state, run_length_compress_info[cur_code.code_length].huffman_code, run_length_compress_info[cur_code.code_length].code_length,true);
     	else
     	{
 	    
@@ -182,20 +187,20 @@ int compress(stream *input_stream, stream *output_stream,sliding_window *window,
     	    if (cur_code.code_length == 16)
     	    {
     		int data = cur_code.code_info - 3;
-    		write_bit(&write_state, run_length_compress_info[cur_code.code_length].huffman_code,run_length_compress_info[cur_code.code_length].code_length , true);
-    		write_bit(&write_state, data, 2, false);
+    		write_bit(write_state, run_length_compress_info[cur_code.code_length].huffman_code,run_length_compress_info[cur_code.code_length].code_length , true);
+    		write_bit(write_state, data, 2, false);
     	    }
     	    else if (cur_code.code_length == 17)
     	    {
     		int data = cur_code.code_info - 3;
-    		write_bit(&write_state, run_length_compress_info[cur_code.code_length].huffman_code, run_length_compress_info[cur_code.code_length].code_length, true);
-    		write_bit(&write_state,data,3,false);
+    		write_bit(write_state, run_length_compress_info[cur_code.code_length].huffman_code, run_length_compress_info[cur_code.code_length].code_length, true);
+    		write_bit(write_state,data,3,false);
     	    }
     	    else if (cur_code.code_length == 18)
     	    {
     		int data = cur_code.code_info - 11;
-    		write_bit(&write_state,run_length_compress_info[cur_code.code_length].huffman_code,run_length_compress_info[cur_code.code_length].code_length,true);
-    		write_bit(&write_state, data, 7, false);
+    		write_bit(write_state,run_length_compress_info[cur_code.code_length].huffman_code,run_length_compress_info[cur_code.code_length].code_length,true);
+    		write_bit(write_state, data, 7, false);
     	    }
     	    else
     		fprintf(stderr,"\nunknown symbol appeared while run length encoding..\n");
@@ -205,10 +210,10 @@ int compress(stream *input_stream, stream *output_stream,sliding_window *window,
     free(run_length_compress_info);
     // Lets view the run length encoded data
     putchar('\n');
-    for (int i = 0; i < write_state.outstream->pos; ++i)
-    {
-    	printf("%02x  ",write_state.outstream->buffer[i]);
-    }
+    /* for (int i = 0; i < write_state->outstream->pos; ++i) */
+    /* { */
+    /* 	printf("%02x  ",write_state->outstream->buffer[i]); */
+    /* } */
 
     // Now data compression and finally the adler32 checksum
     // Pass over the input stream from zero
@@ -222,8 +227,8 @@ int compress(stream *input_stream, stream *output_stream,sliding_window *window,
     	literal_huffman_code[i].code_length = 0;
     	literal_huffman_code[i].value = 0;
     	literal_huffman_code[i].huffman_code = 0;
-    	if (count_code_length[i]!=0)
-    	    printf("\nCounted [%d] -> %d.",i,count_code_length[i]);
+    	/* if (count_code_length[i]!=0) */
+    	/*     printf("\nCounted [%d] -> %d.",i,count_code_length[i]); */
 	
     }
     
@@ -268,13 +273,14 @@ int compress(stream *input_stream, stream *output_stream,sliding_window *window,
     				      4, 4, 5, 5, 6, 6, 7, 7, 8, 8,
     				      9, 9, 10, 10, 11, 11, 12, 12, 13,13};
 
-    window->start_pos = 0;
-    window->end_pos = 0;
+    window->start_pos = current_stream_pos;
+    window->end_pos = current_stream_pos;
 
     hash_entry ** new_hash_table = init_hash_table();
     printf("\n\n Output ----> \n");
 
-    input_stream->pos = 0;
+    int lit_count = 0;
+    input_stream->pos = current_stream_pos;
     while(1)
     {
 
@@ -288,7 +294,7 @@ int compress(stream *input_stream, stream *output_stream,sliding_window *window,
     	    for (int i = 0; i < count; ++i)
     	    {
     		// Write to the output buffer
-    		write_bit(&write_state, literal_huffman_code[input_stream->buffer[input_stream->pos-count+i]].huffman_code, literal_huffman_code[input_stream->buffer[input_stream->pos-count+i]].code_length, true);
+    		write_bit(write_state, literal_huffman_code[input_stream->buffer[input_stream->pos-count+i]].huffman_code, literal_huffman_code[input_stream->buffer[input_stream->pos-count+i]].code_length, true);
 
        	    }
     	    break;
@@ -300,79 +306,83 @@ int compress(stream *input_stream, stream *output_stream,sliding_window *window,
     	{
     	    for (int i = 0; i < 3; ++i)
     	    {
-    	    	write_bit(&write_state, literal_huffman_code[input_stream->buffer[input_stream->pos-count+i]].huffman_code, literal_huffman_code[input_stream->buffer[input_stream->pos-count+i]].code_length, true);
+    	    	write_bit(write_state, literal_huffman_code[input_stream->buffer[input_stream->pos-count+i]].huffman_code, literal_huffman_code[input_stream->buffer[input_stream->pos-count+i]].code_length, true);
 
-    		// extra added
     		 //printf("%c",input_stream->buffer[input_stream->pos-count+i]);
     	    }
-
+	  
     	}
     	else
     	{
     	    // Length code
     	    int16_t index = literal_for_length(record.length);
     	    // write the code of length in reversed order
-    	    write_bit(&write_state,literal_huffman_code[index].huffman_code,literal_huffman_code[index].code_length, true);
+    	    write_bit(write_state,literal_huffman_code[index].huffman_code,literal_huffman_code[index].code_length, true);
 
     	    int start_length = length_write_info[index-257];
     	    assert(record.length - start_length>=0);
-    	    printf("\nMatched length is -> %d & matched distance is %d.",record.length,record.distance);
-    	    printf("\nCorresponding code is -> %d. and bits are %d.",index,length_write_extra_bit[index-257]);
+    	    //printf("\nMatched length is -> %d & matched distance is %d.",record.length,record.distance);
+    	    //printf("\nCorresponding code is -> %d. and inlen is %d.",index,input_stream->pos);
     	    // Length and its bit written
-    	    write_bit(&write_state,record.length-start_length,length_write_extra_bit[index-257],false);
+    	    write_bit(write_state,record.length-start_length,length_write_extra_bit[index-257],false);
 	    
 
     	    // Increase the input stream by matched length
 	    
     	    // Distance code
     	    index = literal_for_distance(record.distance);
-    	    write_bit(&write_state, distance_huffman_code[index].huffman_code, distance_huffman_code[index].code_length, true);
+    	    write_bit(write_state, distance_huffman_code[index].huffman_code, distance_huffman_code[index].code_length, true);
 
     	    int start_distance = distance_write_info[index];
-    	    printf("Corresponding length is -> %d.\n",index);
+    	    //printf("Corresponding length is -> %d.\n",index);
 
     	    assert(record.distance - start_distance >= 0);
     	    // printf("\nDistance is -> %d. Huffman code is %d and %d.",record.distance,distance_huffman_code[index].huffman_code,distance_huffman_code[index].code_length);
 	   
 	  
-    	    write_bit(&write_state, record.distance - start_distance, distance_write_extra_bit[index], false);
+    	    write_bit(write_state, record.distance - start_distance, distance_write_extra_bit[index], false);
     	    input_stream->pos += record.length - 3;
 
     	}
     	update_sliding_window(input_stream, window);
+	lit_count++;
+	if (lit_count >= MAX_LITERAL_PER_BLOCK)
+	    break;
     }
 
+    assert(lit_count == *literal_count);
     int end_literal = 256;
     // printf("\nValue of end literal is %d, its huffman code -> %d and length is %d.\n",literal_huffman_code[end_literal].value,literal_huffman_code[end_literal].huffman_code, literal_huffman_code[end_literal].code_length);
-    write_bit(&write_state,literal_huffman_code[end_literal].huffman_code,literal_huffman_code[end_literal].code_length,true);
+    write_bit(write_state,literal_huffman_code[end_literal].huffman_code,literal_huffman_code[end_literal].code_length,true);
 
-    // Force write the last buffer onto the output stream
-    write_state.outstream->buffer[write_state.outstream->pos++] = write_state.bit_buffer;
-
-    write_adler32(input_stream, output_stream);
     
-    fprintf(stdout, "\nWriting the final output data : \n");
-    putchar('\n');
-    for (int i = 0; i < write_state.outstream->pos; ++i)
-    {
-    	printf("%02x  ",write_state.outstream->buffer[i]);
-    	if ((i+1)%25==0)
-    	    putchar('\n');
-    }
-    putchar('\n');
+    /* // Force write the last buffer onto the output stream */
+    /* write_state.outstream->buffer[write_state.outstream->pos++] = write_state.bit_buffer; */
+
+    /* write_adler32(input_stream, output_stream); */
+    
+    /* /\* fprintf(stdout, "\nWriting the final output data : \n"); *\/ */
+    /* /\* putchar('\n'); *\/ */
+    /* /\* for (int i = 0; i < write_state.outstream->pos; ++i) *\/ */
+    /* /\* { *\/ */
+    /* /\* 	printf("%02x  ",write_state.outstream->buffer[i]); *\/ */
+    /* /\* 	if ((i+1)%25==0) *\/ */
+    /* /\* 	    putchar('\n'); *\/ */
+    /* /\* } *\/ */
+    /* /\* putchar('\n'); *\/ */
     cleanup_hash(new_hash_table);
 
-    // Now finally write the output stream to file
+    /* // Now finally write the output stream to file */
 
-    FILE* compressed = fopen("output.zlib","wb");
-    if(!compressed)
-    {
-    	fprintf(stderr, "\nFailed to open output.zlib for writing....\n");
-    	exit(0);
-    }
+    /* FILE* compressed = fopen("output.zlib","wb"); */
+    /* if(!compressed) */
+    /* { */
+    /* 	fprintf(stderr, "\nFailed to open output.zlib for writing....\n"); */
+    /* 	exit(0); */
+    /* } */
 
-    fwrite(output_stream->buffer, sizeof(unsigned char), output_stream->pos, compressed);
-    fclose(compressed);
+    /* fwrite(output_stream->buffer, sizeof(unsigned char), output_stream->pos, compressed); */
+    /* fclose(compressed); */
 }
 
 
