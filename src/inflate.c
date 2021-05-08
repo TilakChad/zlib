@@ -15,6 +15,8 @@ int construct_huffman_code(compress_info* info_table, int32_t* code_length, int 
 	if (max_code_length < code_length[i])
 	    max_code_length = code_length[i];
     }
+
+    /* if(max_code_length==0) return 2; */
     assert(max_code_length<=15);
 
     // Count numbers of each code_length
@@ -50,9 +52,9 @@ int construct_huffman_code(compress_info* info_table, int32_t* code_length, int 
     return 0;
 }
 
-void write_adler32(stream* instream, stream* outstream)
+void write_adler32(stream* instream, bit_writer* bit_write)
 {
-    if (outstream->pos > outstream->len - 4)
+    if (bit_write->outstream->pos > bit_write->outstream->len - 4)
     {
 	fprintf(stderr,"Output buffer not big enough to write adler32 checksum\n");
 	return ;
@@ -71,8 +73,6 @@ void write_adler32(stream* instream, stream* outstream)
     // write adler32 to outstream 
     for (int i = 0; i < 4; ++i)
     {
-	outstream->buffer[outstream->pos++] = (adler32 >> ((3-i)*8)) & 0xFF ; 
-    }
-	
-    
+	bit_write->outstream->buffer[bit_write->outstream->pos++] = (adler32 >> ((3-i)*8)) & 0xFF ; 
+    }   
 }
