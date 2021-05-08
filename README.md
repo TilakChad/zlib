@@ -21,4 +21,10 @@ A large numbers of header and source files are needed. It might not have been ne
 A number of things could be changed or made simpler but I didn't go through those stuffs. I read the rfc 1950 & 1951 and went to work. <br>
 I might write a Chip-8 emulator next. <br>
 
+<br> 
+<br>
+TL;DR -> It is still incomplete. It works for certain files only. The huffman code generation procedure need to be modified by some high intellect alogrithm. The naive method doesn't work for larger files.
+<br>
+But when it works, it can be decompressed by any standard gzip compressor/decompressor.
+<br>
 
