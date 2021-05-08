@@ -2,9 +2,9 @@
 #define BINARY_IO_H
 #include "inflate.h"
 
-void write_header(stream*);
+void write_zlib_header(bit_writer*);
 
-void write_deflate_header(bit_writer*);
+void write_deflate_header(bit_writer*,int,int);
 
 compress_info* write_run_length(bit_writer *, int, int, int32_t *, int);
 

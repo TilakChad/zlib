@@ -6,13 +6,13 @@
 #include <assert.h>
 #include "binary_IO.h"
 
-void write_deflate_header(bit_writer* writer)
+void write_deflate_header(bit_writer* writer, int bfinal, int btype)
 {
-    write_bit(writer, 1, 1,false);
-    write_bit(writer,2,2,false);
+    write_bit(writer, bfinal, 1,false);
+    write_bit(writer, btype, 2,false);
 }
 
-void write_header(stream* outstream)
+void write_zlib_header(bit_writer* writer)
 {
     // First bytes of the zlib header contains
     /*
@@ -23,25 +23,25 @@ void write_header(stream* outstream)
 	    CMF -> bits 0 to 3 CM (Compression method)
 	        -> bits 4 to 7 CINFO (Compression info)
     */
-    outstream->pos = 0;
+    writer->outstream->pos = 0;
 
-    outstream->buffer[0] = (outstream->buffer[0] & 0xF0) | 0x08;
-    outstream->buffer[0] = (outstream->buffer[0] & 0x0F) | 0x70;
+    writer->outstream->buffer[0] = (writer->outstream->buffer[0] & 0xF0) | 0x08;
+    writer->outstream->buffer[0] = (writer->outstream->buffer[0] & 0x0F) | 0x70;
 
     // Setting FDICT = 0
-    outstream->buffer[1] = 0x00;
+    writer->outstream->buffer[1] = 0x00;
     // Setting compression level to default
-    outstream->buffer[1] = 0x80;
+    writer->outstream->buffer[1] = 0x80;
 
     // Finally write the value of FCHECK
     // could've easily hardcoded but lets leave this for now 
-    uint32_t num = outstream->buffer[0] * 256;
-    num = (num % 31 + outstream->buffer[1] % 31)%31;
+    uint32_t num = writer->outstream->buffer[0] * 256;
+    num = (num % 31 + writer->outstream->buffer[1] % 31)%31;
     num = 31- num;
-    outstream->buffer[1] += num;
+    writer->outstream->buffer[1] += num;
 
     // Writ the run length_encoding now
-    outstream->pos+=2; 
+    writer->outstream->pos+=2; 
 }
 
 
