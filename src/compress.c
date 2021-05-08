@@ -30,7 +30,6 @@ extern void write_header(stream*);
 struct run_length run_length_encoder(int32_t* arr, int cur_index, int max_index, struct run_length prev_code); 
 
 
-
 int compress(stream *input_stream, bit_writer* write_state,sliding_window *window, hash_entry **hash_table, int* literal_count)
 {
     int32_t literals[NLIT+NDIST];
@@ -102,7 +101,6 @@ int compress(stream *input_stream, bit_writer* write_state,sliding_window *windo
     /* } */
 
     // Now need to generate dynamic huffman codes from the given table ..
-    // Need to count the code length of first 285+1 literals
     int32_t count_code_length[NDIST+NLIT];
     for (int i = 0; i < NDIST + NLIT; ++i)
     	count_code_length[i] = 0;
