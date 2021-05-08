@@ -61,13 +61,22 @@ int lz77(stream* input_stream, sliding_window* window, hash_entry** hash_table, 
 		{
 		    matched.length = this_matched_length;
 		    matched.distance = input_stream->pos - 3  - traverser->loc;
+		    if (matched.distance > 32000)
+			printf("\nMatched distance is %d.",matched.distance);
 		}
 	    }
 
 	    if ( (traverser->loc < window->start_pos) || (traverser->loc > window->end_pos))
 	    {
+
+		if (traverser == hash_table[index])
+		{
+		    delete_chain(hash_table[index]);
+		    hash_table[index] = NULL;
+		    break;
+		}
+       		delete_chain(traverser);
 		previous->next = NULL;
-		delete_chain(traverser);
 		break;
 	    }
 
