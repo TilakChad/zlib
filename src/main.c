@@ -9,9 +9,10 @@
 #include "stream.h"
 #include <stdio.h>
 #include "hash_table.h"
+#include "binary_IO.h"
 
-extern int compress(stream*, stream*, sliding_window*, hash_entry**);
-#define SIZE (1024*1024)
+extern int compress(stream*,bit_writer*, sliding_window*, hash_entry**,int*);
+#define SIZE (1024*1024*5)
 
 
 int main(int argc, char **argv)
@@ -52,21 +53,50 @@ int main(int argc, char **argv)
     
     instream.pos = 0;
     instream.len = read_size;
-
-    hash_entry** hash_table = init_hash_table();
+    bit_writer writes_bits;
+    writes_bits.bit_buffer = 0;
+    writes_bits.outstream = &outstream;
+    writes_bits.count = 0;
     
+    hash_entry** hash_table;
     sliding_window window;
-    window.start_pos = 0;
-    window.end_pos = 0;
 
-    // instead of writing to the main file, lets just write to outstream for now 
-    compress(&instream,&outstream,&window,hash_table);
+    write_zlib_header(&writes_bits);
+    
+    int literal_count = 0;
+    while(1)
+    {
+	literal_count = 0;;
+	window.start_pos = instream.pos;
+	window.end_pos = instream.pos;
 
+        hash_table = init_hash_table();
 
+	
+	// instead of writing to the main file, lets just write to outstream for now 
+	compress(&instream,&writes_bits, &window,hash_table,&literal_count);
+	if(literal_count<MAX_LITERAL_PER_BLOCK)
+	{
+	    writes_bits.outstream->buffer[writes_bits.outstream->pos++] = writes_bits.bit_buffer;
+	    write_adler32(&instream,&writes_bits);
+	    cleanup_hash(hash_table);
+	    break;
+	}
+	cleanup_hash(hash_table);
+    }
+
+    FILE* compressed = fopen("comp.deflate","w");
+    if(!compressed)
+    {
+    	fprintf(stderr,"Error in opening compressed.zlib for writing...");
+    	return 1;
+    }
+    fwrite(writes_bits.outstream->buffer,sizeof(unsigned char),writes_bits.outstream->pos,compressed);
+    fclose(compressed);
     //cleanup section 
     free(instream.buffer);
     free(outstream.buffer);
-    cleanup_hash(hash_table);
+
     
     fclose(fp);
     return 0;   
