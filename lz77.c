@@ -3,27 +3,21 @@
 #include "hash_table.h"
 #include <stdio.h>
 #include <assert.h>
+#include "lz77.h"
 
-typedef struct length_distance
-{
-    int32_t distance;
-    int16_t length;
-} length_distance;
-
-int lz77(stream* input_stream,stream* output_stream, sliding_window* window, hash_entry** hash_table)
+int lz77(stream* input_stream, sliding_window* window, hash_entry** hash_table, length_distance* record)
 {
     hash_entry in_str;
     int8_t count = get_next3_bytes(input_stream, &in_str);
 
+    int match_started_index = input_stream->pos;
+    
     input_stream->pos += count;
     update_sliding_window(input_stream, window);
 
     // Match will be done on the part exclding the 3 bytes
     int32_t matched_length;
 
-    if (count == 0)
-	return 0;
-    
     if (count == 3)
     {
 	// Implement the matching and find the largest subsequence that match the input sequence
@@ -32,6 +26,7 @@ int lz77(stream* input_stream,stream* output_stream, sliding_window* window, has
 	matched.length = -1;
 
 	int16_t index = hash_function(in_str);
+	
 	// will check the chain of the hash table until the hash_entry is found
 	hash_entry* traverser = hash_table[index];
 	hash_entry* previous = hash_table[index];
@@ -51,7 +46,9 @@ int lz77(stream* input_stream,stream* output_stream, sliding_window* window, has
 		/* fprintf(stderr, "Found the location %d.\n", traverser->loc); */
 		while( (input_stream->pos + this_matched_length < input_stream->len))
 		{
-		    if (this_matched_length >= 285)
+		    if (traverser->loc + this_matched_length >= match_started_index)
+			break;
+		    if (this_matched_length >= 258)
 			break;
 
 		    if (input_stream->buffer[input_stream->pos - 3 + this_matched_length] == input_stream->buffer[traverser->loc + this_matched_length])
@@ -83,35 +80,15 @@ int lz77(stream* input_stream,stream* output_stream, sliding_window* window, has
 	in_str.next = NULL;
 	insert_table(hash_table, in_str);
 
-	if (matched.distance == -1 && matched.length == -1)
-	{
-	    fprintf(stdout,"Not input symbol found -> %c%c%c.\n",in_str.str[0],in_str.str[1],in_str.str[2]);
-	    for (int i = 0; i < 3; ++i)
-		output_stream->buffer[output_stream->pos++] = in_str.str[i];
+	record->length = matched.length;
+	record->distance = matched.distance;
 
-	    output_stream->buffer[output_stream->pos] = '\0';
-	    
-	    // wrtie next 3 bytes to ouput stream
-	}
-	else
-	{
-	    fprintf(stdout,"Run length : distance -> %d && length -> %d.\n",matched.distance,matched.length);
-	    assert(matched.length!=-11);
-	    input_stream->pos+= matched.length-3;
-
-	    int32_t back_pos = output_stream->pos - matched.distance;
-	    int32_t length = matched.length;
-	    while(length--)
-	    {
-		output_stream->buffer[output_stream->pos++] = output_stream->buffer[back_pos++];
-	    }
-	    output_stream->buffer[output_stream->pos] = '\0';
-	}
     }
     else
     {
-	// Write count bytes to output stream.
-	
+	record->length = -1;
+	record->distance = -1;
     }
-    return -1;
+
+    return count;
 }
