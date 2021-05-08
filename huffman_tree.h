@@ -15,5 +15,5 @@ void code_length(node*, int32_t , int32_t*, unsigned);
 void print_tree(node*, char* , int32_t );
 
 // Take the first node of the huffman tree and deallocates 
-void clenaup_tree(node*); 
+void cleanup_tree(node*); 
 #endif
