@@ -13,7 +13,9 @@ int huffman_coding(int32_t* array, unsigned arr_size, int32_t* count, unsigned c
 	if (array[i]!=0)
 	    count_non_zero++;
     }
-    
+
+    if(count_non_zero==0)
+	return 2;
     priority_minheap minheap = init_minheap(count_non_zero);
 
     // printf("\nCount non zero were %d. nnd %d\n",count_non_zero , arr_size);
