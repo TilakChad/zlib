@@ -1,38 +1,42 @@
 #include "priority_minheap.h"
+#include <assert.h>
 #include <stdlib.h>
+#include "huffman_tree.h"
+int build_huffman_tree(priority_minheap *);
 
-int build_huffman_tree(priority_minheap*);
-
-void print_tree(node*, char* str, int32_t index);
-
-int main()
+int huffman_coding(int32_t* array, unsigned arr_size, int32_t* count, unsigned count_len)
 {
-    printf("Enter size ");
-    uint16_t size;
-    scanf("%hd",&size);
-    
-    priority_minheap minheap = init_minheap(size);
-    printf("\nEnter name and freq : \n");
-    for (int i = 0; i < size; ++i)
+    int32_t count_non_zero = 0;
+
+    for (unsigned i = 0; i < arr_size; ++i)
     {
-	node* newnode = malloc(sizeof(node));
-	newnode->left = NULL;
-	newnode->right = NULL;
-	scanf("%hd",&newnode->value);
-	scanf("%hd",&newnode->frequency);
-	/* newnode->frequency = i; */
-	insert_pqueue(&minheap, newnode);
+	if (array[i]!=0)
+	    count_non_zero++;
     }
+    
+    priority_minheap minheap = init_minheap(count_non_zero);
+
+    // printf("\nCount non zero were %d. nnd %d\n",count_non_zero , arr_size);
+    for (int i = 0; i < arr_size; ++i)
+    {
+	if (array[i]!=0)
+	{
+	    node* newnode = malloc(sizeof(node));
+	    newnode->left = NULL;
+	    newnode->right = NULL;
+	    newnode->value = i;
+	    newnode->frequency = array[i];
+	    /* newnode->frequency = i; */
+	    insert_pqueue(&minheap, newnode);
+	}
+    }
+    
     build_huffman_tree(&minheap);
 
-    /* while(minheap.current_index!=0) */
-    /* { */
-    /* 	node* min = remove_min(&minheap); */
-    /* 	printf(" %c -> %hd.\n",min->value,min->frequency); */
-    /* }; */
-    
-    char buffer[100];
-    print_tree(minheap.queue[0],buffer,0);
+    code_length(minheap.queue[0], 0, count, count_len);
+
+    cleanup_tree(minheap.queue[0]);
+    free(minheap.queue);
     
     return 0;
 }
@@ -68,12 +72,13 @@ int build_huffman_tree(priority_minheap* pqueue)
 	newnode->right = right;
 	newnode->value = -1;
 	newnode->frequency = left->frequency + right->frequency;
-	printf("%c %c combined to -> %hd.\n",left->value,right->value,newnode->frequency);
+
 	insert_pqueue(pqueue, newnode);
     }
     return 0;
 }
 
+// helper function if needed 
 void print_tree(node* tree, char* str, int32_t index)
 {
     if (!tree)
@@ -99,6 +104,34 @@ void print_tree(node* tree, char* str, int32_t index)
 	printf("\n%c -> %s.",tree->value ,str);
     }
 }
-    
-    
+
+void code_length(node* tree, int32_t index, int32_t* count, unsigned count_len)
+{
+    if (!tree)
+	return;
+
+    if (tree->left!=NULL)
+	code_length(tree->left, index+1, count,count_len);
+
+    if (tree->right!=NULL)
+	code_length(tree->right, index+1, count,count_len);
+
+    if (tree->left == NULL && tree->right == NULL)
+    {
+	assert(tree->value < count_len);
+	count[tree->value] = index;
+    }
+}
+
+void cleanup_tree(node *tree)
+{
+    if (!tree)
+	return;
+
+    cleanup_tree(tree->left);
+    cleanup_tree(tree->right);
+
+    free(tree);
+}
+
     
