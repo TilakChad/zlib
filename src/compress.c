@@ -114,7 +114,7 @@ int compress(stream *input_stream, bit_writer* write_state,sliding_window *windo
     for(int i = 0; i < NLIT + NDIST; ++i)
     {
     	if (count_code_length[i]!=0);
-    	    // printf(" [%d] -> [%d]\n", i , count_code_length[i]);
+	// printf(" [%d] -> [%d]\n", i , count_code_length[i]);
     }
     // This code calculates the run length of the remaining huffman codes
 
@@ -145,15 +145,21 @@ int compress(stream *input_stream, bit_writer* write_state,sliding_window *windo
     for (int i = 0; i < 19; ++i)
     	run_length_code_length[i] = 0;
 
+    printf("\nRun length frequency info -> \n ..");
+    for (int i = 0; i < 19; ++i)
+    {
+	printf("\ncode-repeat[%d] -> %d.",i,run_length_coderepeat[i]);
+    }
+    
     huffman_coding(run_length_coderepeat, 19, run_length_code_length, 19);
 
-    printf("\nRun length info -> \n");
-    /* for (int i = 0; i < 19; ++i) */
-    /* { */
-    /* 	if (run_length_code_length[i]!=0) */
-    /* 	    printf("\n [%d] -> [%d].",i, run_length_code_length[i]); */
-    /* } */
-    /* putchar('\n'); */
+    printf("\nRun length code length info -> \n");
+    for (int i = 0; i < 19; ++i)
+    {
+    	if (run_length_code_length[i]!=0)
+    	    printf("\n Code-length [%d] -> [%d].",i, run_length_code_length[i]);
+    }
+    putchar('\n');
 
     // Now need to write to the files as compressed block .. it is the final stage
     // Initialize the bit writer
@@ -235,7 +241,7 @@ int compress(stream *input_stream, bit_writer* write_state,sliding_window *windo
     for(int i = 0; i < NLIT; ++i)
     {
     	if (literal_huffman_code[i].code_length != 0);
-    	    // printf("\nCode value : %d, code -> %d, code.length -> %d.",literal_huffman_code[i].value,literal_huffman_code[i].huffman_code,literal_huffman_code[i].code_length);
+	// printf("\nCode value : %d, code -> %d, code.length -> %d.",literal_huffman_code[i].value,literal_huffman_code[i].huffman_code,literal_huffman_code[i].code_length);
     }
     
     construct_huffman_code(literal_huffman_code+NLIT, count_code_length+NLIT, NDIST);
@@ -246,7 +252,7 @@ int compress(stream *input_stream, bit_writer* write_state,sliding_window *windo
     for(int i = 0; i < NDIST; ++i)
     {
     	if (distance_huffman_code[i].code_length != 0);
-    	    // printf("\nCode value : %d, code -> %d, code.length -> %d.",distance_huffman_code[i].value,distance_huffman_code[i].huffman_code,distance_huffman_code[i].code_length);
+	// printf("\nCode value : %d, code -> %d, code.length -> %d.",distance_huffman_code[i].value,distance_huffman_code[i].huffman_code,distance_huffman_code[i].code_length);
     }
     
     // Read the input stream from beginning and use lz77
@@ -275,10 +281,11 @@ int compress(stream *input_stream, bit_writer* write_state,sliding_window *windo
     window->end_pos = current_stream_pos;
 
     hash_entry ** new_hash_table = init_hash_table();
-    printf("\n\n Output ----> \n");
+    //printf("\n\n Output ----> \n");
 
     int lit_count = 0;
     input_stream->pos = current_stream_pos;
+    int literal_counter = 0;
     while(1)
     {
 
@@ -293,6 +300,8 @@ int compress(stream *input_stream, bit_writer* write_state,sliding_window *windo
     	    {
     		// Write to the output buffer
     		write_bit(write_state, literal_huffman_code[input_stream->buffer[input_stream->pos-count+i]].huffman_code, literal_huffman_code[input_stream->buffer[input_stream->pos-count+i]].code_length, true);
+		if(literal_counter < 5000)
+		    printf("\n literal written %d -> %d.",input_stream->buffer[input_stream->pos-count+i],literal_counter++);
 
        	    }
     	    break;
@@ -306,7 +315,8 @@ int compress(stream *input_stream, bit_writer* write_state,sliding_window *windo
     	    {
     	    	write_bit(write_state, literal_huffman_code[input_stream->buffer[input_stream->pos-count+i]].huffman_code, literal_huffman_code[input_stream->buffer[input_stream->pos-count+i]].code_length, true);
 
-    		 //printf("%c",input_stream->buffer[input_stream->pos-count+i]);
+		printf("\n literal countxx %d -> %d.",input_stream->buffer[input_stream->pos-count+i], literal_counter++);
+
     	    }
 	  
     	}
@@ -317,6 +327,7 @@ int compress(stream *input_stream, bit_writer* write_state,sliding_window *windo
     	    // write the code of length in reversed order
     	    write_bit(write_state,literal_huffman_code[index].huffman_code,literal_huffman_code[index].code_length, true);
 
+//	    printf("\n Literal written %d -> %d.",index,literal_counter++);
     	    int start_length = length_write_info[index-257];
     	    assert(record.length - start_length>=0);
     	    //printf("\nMatched length is -> %d & matched distance is %d.",record.length,record.distance);
