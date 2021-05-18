@@ -62,7 +62,8 @@ int main(int argc, char **argv)
     sliding_window window;
 
     write_zlib_header(&writes_bits);
-    
+
+    int block_count = 0;
     int literal_count = 0;
     while(1)
     {
@@ -72,6 +73,7 @@ int main(int argc, char **argv)
 
         hash_table = init_hash_table();
 
+	++block_count;
 	
 	// instead of writing to the main file, lets just write to outstream for now 
 	compress(&instream,&writes_bits, &window,hash_table,&literal_count);
@@ -97,7 +99,8 @@ int main(int argc, char **argv)
     free(instream.buffer);
     free(outstream.buffer);
 
-    
+    fprintf(stderr,"\n\nTotal block count were ... %d.",block_count);
+    fprintf(stderr,"\nTotal input written were .. %d.",instream.pos);
     fclose(fp);
     return 0;   
 }
