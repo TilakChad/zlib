@@ -105,12 +105,12 @@ int compress(stream *input_stream, bit_writer* write_state,sliding_window *windo
     for (int i = 0; i < NDIST + NLIT; ++i)
     	count_code_length[i] = 0;
 
-    huffman_coding(literals, NLIT, count_code_length, NLIT);
+    huffman_coding(literals, NLIT, count_code_length, NLIT,15);
 
   
 
     // Form the code lengths for the remaining distance codes also
-    huffman_coding(literals+NLIT, NDIST, count_code_length+NLIT, NDIST);
+    huffman_coding(literals+NLIT, NDIST, count_code_length+NLIT, NDIST,15);
     for(int i = 0; i < NLIT + NDIST; ++i)
     {
     	if (count_code_length[i]!=0);
@@ -151,7 +151,7 @@ int compress(stream *input_stream, bit_writer* write_state,sliding_window *windo
 	printf("\ncode-repeat[%d] -> %d.",i,run_length_coderepeat[i]);
     }
     
-    huffman_coding(run_length_coderepeat, 19, run_length_code_length, 19);
+    huffman_coding(run_length_coderepeat, 19, run_length_code_length, 19,7);
 
     printf("\nRun length code length info -> \n");
     for (int i = 0; i < 19; ++i)
