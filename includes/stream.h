@@ -38,7 +38,7 @@ typedef struct bit_writer
     int32_t count;
 } bit_writer;
 
-#define MAX_LITERAL_PER_BLOCK 8192
+#define MAX_LITERAL_PER_BLOCK 16384
 
 #endif
 // Lets leave it at this for now...
