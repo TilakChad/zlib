@@ -145,21 +145,21 @@ int compress(stream *input_stream, bit_writer* write_state,sliding_window *windo
     for (int i = 0; i < 19; ++i)
     	run_length_code_length[i] = 0;
 
-    printf("\nRun length frequency info -> \n ..");
-    for (int i = 0; i < 19; ++i)
-    {
-	printf("\ncode-repeat[%d] -> %d.",i,run_length_coderepeat[i]);
-    }
+    // printf("\nRun length frequency info -> \n ..");
+    /* for (int i = 0; i < 19; ++i) */
+    /* { */
+    /* 	printf("\ncode-repeat[%d] -> %d.",i,run_length_coderepeat[i]); */
+    /* } */
     
     huffman_coding(run_length_coderepeat, 19, run_length_code_length, 19,7);
 
-    printf("\nRun length code length info -> \n");
-    for (int i = 0; i < 19; ++i)
-    {
-    	if (run_length_code_length[i]!=0)
-    	    printf("\n Code-length [%d] -> [%d].",i, run_length_code_length[i]);
-    }
-    putchar('\n');
+    //  printf("\nRun length code length info -> \n");
+    /* for (int i = 0; i < 19; ++i) */
+    /* { */
+    /* 	if (run_length_code_length[i]!=0) */
+    /* 	    printf("\n Code-length [%d] -> [%d].",i, run_length_code_length[i]); */
+    /* } */
+    /* putchar('\n'); */
 
     // Now need to write to the files as compressed block .. it is the final stage
     // Initialize the bit writer
@@ -213,7 +213,7 @@ int compress(stream *input_stream, bit_writer* write_state,sliding_window *windo
     };
     free(run_length_compress_info);
     // Lets view the run length encoded data
-    putchar('\n');
+    // putchar('\n');
     /* for (int i = 0; i < write_state->outstream->pos; ++i) */
     /* { */
     /* 	printf("%02x  ",write_state->outstream->buffer[i]); */
@@ -224,7 +224,7 @@ int compress(stream *input_stream, bit_writer* write_state,sliding_window *windo
     // printf("Current pos of input stream is %d and len is %d.",input_stream->pos,input_stream->len);
     input_stream->pos = 0;
 
-    printf("\n---------------- Printing code lengths --------------------\n");
+    // printf("\n---------------- Printing code lengths --------------------\n");
     compress_info literal_huffman_code[NLIT+NDIST];
     for (int i = 0; i < NLIT + NDIST; ++i)
     {
@@ -248,7 +248,7 @@ int compress(stream *input_stream, bit_writer* write_state,sliding_window *windo
 
     compress_info* distance_huffman_code = literal_huffman_code + NLIT;
 
-    putchar('\n');
+    // putchar('\n');
     for(int i = 0; i < NDIST; ++i)
     {
     	if (distance_huffman_code[i].code_length != 0);
@@ -300,8 +300,7 @@ int compress(stream *input_stream, bit_writer* write_state,sliding_window *windo
     	    {
     		// Write to the output buffer
     		write_bit(write_state, literal_huffman_code[input_stream->buffer[input_stream->pos-count+i]].huffman_code, literal_huffman_code[input_stream->buffer[input_stream->pos-count+i]].code_length, true);
-		if(literal_counter < 5000)
-		    printf("\n literal written %d -> %d.",input_stream->buffer[input_stream->pos-count+i],literal_counter++);
+		// printf("\n literal written %d -> %d.",input_stream->buffer[input_stream->pos-count+i],literal_counter++);
 
        	    }
     	    break;
@@ -315,7 +314,7 @@ int compress(stream *input_stream, bit_writer* write_state,sliding_window *windo
     	    {
     	    	write_bit(write_state, literal_huffman_code[input_stream->buffer[input_stream->pos-count+i]].huffman_code, literal_huffman_code[input_stream->buffer[input_stream->pos-count+i]].code_length, true);
 
-		printf("\n literal countxx %d -> %d.",input_stream->buffer[input_stream->pos-count+i], literal_counter++);
+		// printf("\n literal countxx %d -> %d.",input_stream->buffer[input_stream->pos-count+i], literal_counter++);
 
     	    }
 	  
