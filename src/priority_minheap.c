@@ -1,6 +1,10 @@
 #include "priority_minheap.h"
 #include <stdlib.h>
 
+// This shouldn't need much explanation
+// It is the standard way of forming huffman tree with the help of priority
+// minheap Working with pointers may be difficult here...
+
 priority_minheap init_minheap(uint16_t size)
 {
     priority_minheap pqueue;

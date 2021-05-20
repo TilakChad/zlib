@@ -5,6 +5,17 @@
 #include <assert.h>
 #include "lz77.h"
 
+// This function returns the longest possible match of the next 3 bytes from
+// input stream within the sliding window.
+// If there are less than 3 bytes available in input stream, it returns with
+// count < 3;
+// It traverses the chain(linked list) of the hash_entry and determines the max
+// possible length within 32 k sliding window.
+// New entries of 3 bytes are pushed as a hash_entry in hash_table.
+// For equal length matched, the nearest (lesser distance) is choosen.
+// For making memeory efficient, hash_entry that goes out of sliding_window (i.e hash_entry->loc not within sliding window)are
+// deallocated dynamically.
+
 int lz77(stream* input_stream, sliding_window* window, hash_entry** hash_table, length_distance* record)
 {
     hash_entry in_str;
@@ -61,11 +72,14 @@ int lz77(stream* input_stream, sliding_window* window, hash_entry** hash_table, 
 		{
 		    matched.length = this_matched_length;
 		    matched.distance = input_stream->pos - 3  - traverser->loc;
-		    if (matched.distance > 32000)
-			printf("\nMatched distance is %d.",matched.distance);
+		    // if (matched.distance > 32000)
+			// printf("\nMatched distance is %d.",matched.distance);
+			
 		}
 	    }
 
+	    // Deallocate the chain that goes out of sliding_window
+	    // It is safe to delete chain since new entries are added at the front of the chain. So, entry after that are also out of sliding window.
 	    if ( (traverser->loc < window->start_pos) || (traverser->loc > window->end_pos))
 	    {
 
@@ -80,6 +94,7 @@ int lz77(stream* input_stream, sliding_window* window, hash_entry** hash_table, 
 		break;
 	    }
 
+	    // Continue traversing the chain 
 	    previous = traverser;
 	    traverser = traverser->next;
 	};

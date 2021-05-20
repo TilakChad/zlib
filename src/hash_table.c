@@ -12,7 +12,8 @@ hash_entry** init_hash_table()
 }
 
 // Not a fancy function .. returns the middle byte
-// Could be made much much larger for space time tradeoff 
+// Could be made much much larger for space time tradeoff
+// Noob hash function optimized for speed and table optimized for size 
 int16_t hash_function(hash_entry entry)
 {
     return entry.str[1];

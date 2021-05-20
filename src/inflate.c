@@ -8,6 +8,10 @@
 
 int construct_huffman_code(compress_info* info_table, int32_t* code_length, int size)
 {
+    // Forms the cannonical huffman code
+    // Huffman code used by deflate depend only upon the code length
+    // Code length information is enough to produce unambigious huffman code
+    
     assert(size!=0);
     int max_code_length = code_length[0];
     for (int i = 0; i < size; ++i)
@@ -16,7 +20,6 @@ int construct_huffman_code(compress_info* info_table, int32_t* code_length, int 
 	    max_code_length = code_length[i];
     }
 
-    /* if(max_code_length==0) return 2; */
     assert(max_code_length<=15);
 
     // Count numbers of each code_length
@@ -28,19 +31,20 @@ int construct_huffman_code(compress_info* info_table, int32_t* code_length, int 
 	each_code_count[code_length[i]]++;
 
     // Need offset array to keep count of each code length offset
-    /* for (int i = 0; i < max_code_length+1; ++i) */
-    /* 	printf("\nCount [%d] -> %d.",i,each_code_count[i]); */
     
     int* offset = malloc(sizeof(int) * (max_code_length+1));
 
     offset[0] = 0;
     each_code_count[0] = 0;
+    // my slight variation of huffman code
+    // Direct function provided in deflate rfc may be used .. they are equivalent
     for (int i = 1; i < max_code_length + 1; ++i)
     {
 	offset[i] = offset[i-1] + each_code_count[i-1];
 	offset[i] <<=1;
     }
 
+    // Passed array modified 
     for (int i = 0; i < size; ++i)
     {
 	info_table[i].value = i;

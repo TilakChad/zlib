@@ -38,7 +38,7 @@ int huffman_coding(int32_t* array, unsigned arr_size, int32_t* count, unsigned c
     
     while(height(minheap.queue[0]) > max_code_length+1)
     {
-	printf("\n\nTree rebalanced .... \n");
+	// printf("\n\nTree rebalanced .... \n");
 	rebalance_huffman_tree_2D(minheap.queue);
     }
     

@@ -48,13 +48,10 @@ void write_zlib_header(bit_writer* writer)
 compress_info* write_run_length(bit_writer* bit_state, int nlit, int ndist, int32_t* run_length_count, int run_length_size)
 {
     int expected_order[] = {16, 17, 18, 0, 8, 7, 9, 6, 10, 5, 11, 4, 12, 3, 13,2, 14, 1, 15};
-    /* for (int i = 0; i < 19; ++i) */
-    /* { */
-    /* 	printf("\n[%d] -> %d.",expected_order[i], run_length_count[expected_order[i]]); */
-    /* } */
 
     // find the no of last entries that are zero so that they can be discarded
-
+    // So that every bit of memory can be saved.. LOL
+    // like if last 3 entries 14,1,15 (Remember, they are ordered according to decrease probability of occurence) doesn't occur, they 3 * 3 bit -> 9 bit can be saved 
     int count_zero = 0;
     for (int i = 18; i >= 0; --i)
     {
@@ -83,6 +80,7 @@ compress_info* write_run_length(bit_writer* bit_state, int nlit, int ndist, int3
 
     construct_huffman_code(run_lengths, run_length_count, 19);
 
+#ifdef DEBUG
     /* for (int i = 0; i < 19; ++i) */
     /* { */
     /* 	if (run_lengths[i].code_length!=0) */
@@ -90,15 +88,16 @@ compress_info* write_run_length(bit_writer* bit_state, int nlit, int ndist, int3
     /* } */
 
     //Before continuing, let's check the state of the bit writer
-    printf("\n----------------------- Bit writer ----------------------------\n");
-    printf("Bitwriter->buffer pos -> %d. \n bitcount -> %d. \n Current buffer %d.\n",bit_state->outstream->pos, bit_state->count, bit_state->bit_buffer);
+    // printf("\n----------------------- Bit writer ----------------------------\n");
+    // printf("Bitwriter->buffer pos -> %d. \n bitcount -> %d. \n Current buffer %d.\n",bit_state->outstream->pos, bit_state->count, bit_state->bit_buffer);
     // Let's continue
-    // OK. This procedure right the length of the code lengths that is to be built by decompressor while decoding further 
-    /* for (int i = 0; i < hclen + 4; ++i) */
-    /* { */
-    /* 	    write_bit(bit_state, run_lengths[expected_order[i]].code_length, 3, false); */
-    /* 	    printf("\n Writing -> %d -> %d.",expected_order[i], run_lengths[expected_order[i]].code_length); */
-    /* } */
+    // OK. This procedure right the length of the code lengths that is to be built by decompressor while decoding further
+#endif
+    for (int i = 0; i < hclen + 4; ++i)
+    {
+    	    write_bit(bit_state, run_lengths[expected_order[i]].code_length, 3, false);
+    	    //printf("\n Writing -> %d -> %d.",expected_order[i], run_lengths[expected_order[i]].code_length);
+    }
     return run_lengths;
     
 }
